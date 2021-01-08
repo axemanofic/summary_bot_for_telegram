@@ -10,10 +10,16 @@ from telebot import types
 bot = telebot.TeleBot(token=config.TOKEN)
 
 
-def getReplyKeyboard(text):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True,
-                                         one_time_keyboard=True)
-    keyboard.add(types.KeyboardButton(text))
+def getReplyKeyboard(text, resize_keyboard=False, one_time_keyboard=False):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=resize_keyboard,
+                                         one_time_keyboard=one_time_keyboard)
+    if type(text) == tuple:
+        for i in text:
+            keyboard.add(types.KeyboardButton(i))
+
+    else:
+        keyboard.add(types.KeyboardButton(text))
+
     return keyboard
 
 
@@ -22,8 +28,9 @@ def getInlineKeyboard():
     button1 = types.InlineKeyboardButton('О себе', callback_data='self')
     button2 = types.InlineKeyboardButton('Скиллы', callback_data='skills')
     button3 = types.InlineKeyboardButton('Образование',
-                                         callback_data='certificates')
+                                         callback_data='education')
     keyboard.row(button1, button2)
+    keyboard.row(button3)
     return keyboard
 
 
@@ -35,7 +42,7 @@ def callback_query(call):
     elif call.data == 'skills':
         bot.edit_message_text('скиллы', chat_id=call.message.chat.id,
                               message_id=call.message.id, reply_markup=getInlineKeyboard())
-    elif call.data == 'certificates':
+    elif call.data == 'education':
         bot.edit_message_text('сертификаты', chat_id=call.message.chat.id,
                               message_id=call.message.id, reply_markup=getInlineKeyboard())
 
@@ -43,19 +50,19 @@ def callback_query(call):
 @bot.message_handler(commands=['start'])
 def welcome(message):
     bot.send_message(message.chat.id, 'Привет 😊',
-                     reply_markup=getReplyKeyboard('Просмотреть резюме 📚'))
+                     reply_markup=getReplyKeyboard(config.USER_BUTTON_TEXT,
+                                                   resize_keyboard=True, one_time_keyboard=True))
 
 
 @bot.message_handler(content_types=['text'])
 def text_handler(message):
-    print(message.text, message.from_user.id)
-
-    if message.text == 'Просмотреть резюме 📚':
+    if message.text == config.USER_BUTTON_TEXT:
         bot.send_message(message.chat.id, 'Выбирай',
                          reply_markup=getInlineKeyboard())
     elif (message.text == 'admin') and (message.chat.id == config.MY_ID):
         bot.send_message(message.chat.id,
-                         'Добро пожаловать {}'.format(message.chat.username))
+                         'Добро пожаловать {}'.format(message.chat.username),
+                         reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
 
 
 def main_loop():
