@@ -5,6 +5,7 @@ import sys
 import time
 import config
 import telebot
+import manage_db
 from telebot import types
 
 bot = telebot.TeleBot(token=config.TOKEN)
@@ -16,7 +17,6 @@ def getReplyKeyboard(text, resize_keyboard=False, one_time_keyboard=False):
     if type(text) == tuple:
         for i in text:
             keyboard.add(types.KeyboardButton(i))
-
     else:
         keyboard.add(types.KeyboardButton(text))
 
@@ -49,6 +49,7 @@ def callback_query(call):
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
+    manage_db.insert_data((message.chat.id, message.chat.first_name, 'user'))
     bot.send_message(message.chat.id, 'Привет 😊',
                      reply_markup=getReplyKeyboard(config.USER_BUTTON_TEXT,
                                                    resize_keyboard=True, one_time_keyboard=True))
@@ -59,9 +60,14 @@ def text_handler(message):
     if message.text == config.USER_BUTTON_TEXT:
         bot.send_message(message.chat.id, 'Выбирай',
                          reply_markup=getInlineKeyboard())
-    elif (message.text == 'admin') and (message.chat.id == config.MY_ID):
-        bot.send_message(message.chat.id,
-                         'Добро пожаловать {}'.format(message.chat.username),
+    elif message.text == 'admin' and message.chat.id in config.MY_ID:
+        bot.send_message(message.chat.id, 'Добро пожаловать, {}'.format(message.chat.first_name),
+                         reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
+    elif message.text == 'Просмотреть статистику 📊' and message.chat.id in config.MY_ID:
+        bot.send_message(message.chat.id, 'Здесь будет статистика',
+                         reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
+    elif message.text == 'Просмотреть итоги голосования 📌' and message.chat.id in config.MY_ID:
+        bot.send_message(message.chat.id, 'Здесь будут итоги голосования',
                          reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
 
 
