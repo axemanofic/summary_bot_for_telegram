@@ -23,33 +23,33 @@ def getReplyKeyboard(text, resize_keyboard=False, one_time_keyboard=False):
     return keyboard
 
 
-def getInlineKeyboard():
+def getKeyboardSummary(text, callback_data=None, url=None):
     keyboard = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton('О себе', callback_data='self')
-    button2 = types.InlineKeyboardButton('Скиллы', callback_data='skills')
-    button3 = types.InlineKeyboardButton('Образование',
-                                         callback_data='education')
-    keyboard.row(button1, button2)
-    keyboard.row(button3)
+    button = types.InlineKeyboardButton(text, callback_data=callback_data, url=url)
+    keyboard.row(button)
     return keyboard
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
+
     if call.data == 'self':
         bot.edit_message_text('о себе', chat_id=call.message.chat.id,
-                              message_id=call.message.id, reply_markup=getInlineKeyboard())
+                              message_id=call.message.id, reply_markup=getKeyboardSummary('Навыки',
+                                                                                          callback_data='skills'))
     elif call.data == 'skills':
         bot.edit_message_text('скиллы', chat_id=call.message.chat.id,
-                              message_id=call.message.id, reply_markup=getInlineKeyboard())
+                              message_id=call.message.id, reply_markup=getKeyboardSummary('Образование',
+                                                                                          callback_data='education'))
     elif call.data == 'education':
         bot.edit_message_text('сертификаты', chat_id=call.message.chat.id,
-                              message_id=call.message.id, reply_markup=getInlineKeyboard())
+                              message_id=call.message.id,
+                              reply_markup=getKeyboardSummary('Написать', url='https://t.me/axemanofic'))
 
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    manage_db.insert_data((message.chat.id, message.chat.first_name, 'user'))
+    manage_db.insert_data((message.chat.id, message.chat.first_name))
     bot.send_message(message.chat.id, 'Привет 😊',
                      reply_markup=getReplyKeyboard(config.USER_BUTTON_TEXT,
                                                    resize_keyboard=True, one_time_keyboard=True))
@@ -59,16 +59,13 @@ def welcome(message):
 def text_handler(message):
     if message.text == config.USER_BUTTON_TEXT:
         bot.send_message(message.chat.id, 'Выбирай',
-                         reply_markup=getInlineKeyboard())
-    elif message.text == 'admin' and message.chat.id in config.MY_ID:
+                         reply_markup=getKeyboardSummary('О себе', callback_data='self'))
+    elif (message.text == 'admin') and (message.chat.id in config.MY_ID):
         bot.send_message(message.chat.id, 'Добро пожаловать, {}'.format(message.chat.first_name),
                          reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
-    elif message.text == 'Просмотреть статистику 📊' and message.chat.id in config.MY_ID:
-        bot.send_message(message.chat.id, 'Здесь будет статистика',
-                         reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
-    elif message.text == 'Просмотреть итоги голосования 📌' and message.chat.id in config.MY_ID:
-        bot.send_message(message.chat.id, 'Здесь будут итоги голосования',
-                         reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
+    elif (message.text == 'Просмотреть статистику 📊') and (message.chat.id in config.MY_ID):
+        num_users = manage_db.count_data()
+        bot.send_message(message.chat.id, config.STATISTIC.format(num_users))
 
 
 def main_loop():
