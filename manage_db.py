@@ -20,7 +20,6 @@ def connection(operation):
 
 @connection
 def insert_data(values, cursor=None):
-    print(values, cursor)
     try:
         cursor.execute("INSERT INTO users VALUES (?, ?)", values)
     except Exception as e:

@@ -4,68 +4,52 @@
 import sys
 import time
 import config
-import telebot
 import manage_db
-from telebot import types
+import telebot
+from global_var import TEMPLATE_TEXT
+from functions import getKeyboardSummary, getReplyKeyboard
 
 bot = telebot.TeleBot(token=config.TOKEN)
 
 
-def getReplyKeyboard(text, resize_keyboard=False, one_time_keyboard=False):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=resize_keyboard,
-                                         one_time_keyboard=one_time_keyboard)
-    if type(text) == tuple:
-        for i in text:
-            keyboard.add(types.KeyboardButton(i))
-    else:
-        keyboard.add(types.KeyboardButton(text))
-
-    return keyboard
-
-
-def getKeyboardSummary(text, callback_data=None, url=None):
-    keyboard = types.InlineKeyboardMarkup()
-    button = types.InlineKeyboardButton(text, callback_data=callback_data, url=url)
-    keyboard.row(button)
-    return keyboard
-
-
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
-
-    if call.data == 'self':
-        bot.edit_message_text('о себе', chat_id=call.message.chat.id,
-                              message_id=call.message.id, reply_markup=getKeyboardSummary('Навыки',
-                                                                                          callback_data='skills'))
-    elif call.data == 'skills':
-        bot.edit_message_text('скиллы', chat_id=call.message.chat.id,
-                              message_id=call.message.id, reply_markup=getKeyboardSummary('Образование',
-                                                                                          callback_data='education'))
+    if call.data == 'skills':
+        bot.edit_message_text(TEMPLATE_TEXT['skills'], chat_id=call.message.chat.id, message_id=call.message.id,
+                              reply_markup=getKeyboardSummary('Образование', callback_data='education'))
     elif call.data == 'education':
-        bot.edit_message_text('сертификаты', chat_id=call.message.chat.id,
-                              message_id=call.message.id,
-                              reply_markup=getKeyboardSummary('Написать', url='https://t.me/axemanofic'))
+        bot.edit_message_text(TEMPLATE_TEXT['education'], chat_id=call.message.chat.id, message_id=call.message.id,
+                              disable_web_page_preview=True, parse_mode='html', reply_markup=
+                              getKeyboardSummary('Написать мне', url='https://t.me/axemanofic'))
 
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
     manage_db.insert_data((message.chat.id, message.chat.first_name))
-    bot.send_message(message.chat.id, 'Привет 😊',
-                     reply_markup=getReplyKeyboard(config.USER_BUTTON_TEXT,
+    bot.send_message(message.chat.id, TEMPLATE_TEXT['welcome'],
+                     reply_markup=getReplyKeyboard(TEMPLATE_TEXT['user_button'],
+                                                   resize_keyboard=True, one_time_keyboard=True), parse_mode='html')
+
+@bot.message_handler(commands=['help'])
+def help_user(message):
+    bot.send_message(message.chat.id, TEMPLATE_TEXT['help'],
+                     reply_markup=getReplyKeyboard(TEMPLATE_TEXT['user_button'],
                                                    resize_keyboard=True, one_time_keyboard=True))
 
 
 @bot.message_handler(content_types=['text'])
 def text_handler(message):
-    if message.text == config.USER_BUTTON_TEXT:
-        bot.send_message(message.chat.id, 'Выбирай',
-                         reply_markup=getKeyboardSummary('О себе', callback_data='self'))
+    print(message)
+    if message.text == TEMPLATE_TEXT['user_button']:
+        bot.send_message(message.chat.id, TEMPLATE_TEXT['about_myself'], disable_web_page_preview=True,
+                         reply_markup=getKeyboardSummary('Навыки', callback_data='skills'))
+
     elif (message.text == 'admin') and (message.chat.id in config.MY_ID):
         bot.send_message(message.chat.id, 'Добро пожаловать, {}'.format(message.chat.first_name),
-                         reply_markup=getReplyKeyboard(config.ADMIN_BUTTON_TEXT, resize_keyboard=True))
-    elif (message.text == 'Просмотреть статистику 📊') and (message.chat.id in config.MY_ID):
+                         reply_markup=getReplyKeyboard(TEMPLATE_TEXT['admin_button'], resize_keyboard=True))
+
+    elif (message.text == TEMPLATE_TEXT['admin_button']) and (message.chat.id in config.MY_ID):
         num_users = manage_db.count_data()
-        bot.send_message(message.chat.id, config.STATISTIC.format(num_users))
 
 
 def main_loop():
