@@ -30,6 +30,7 @@ def welcome(message):
                      reply_markup=getReplyKeyboard(TEMPLATE_TEXT['user_button'],
                                                    resize_keyboard=True, one_time_keyboard=True), parse_mode='html')
 
+
 @bot.message_handler(commands=['help'])
 def help_user(message):
     bot.send_message(message.chat.id, TEMPLATE_TEXT['help'],
@@ -39,7 +40,6 @@ def help_user(message):
 
 @bot.message_handler(content_types=['text'])
 def text_handler(message):
-    print(message)
     if message.text == TEMPLATE_TEXT['user_button']:
         bot.send_message(message.chat.id, TEMPLATE_TEXT['about_myself'], disable_web_page_preview=True,
                          reply_markup=getKeyboardSummary('Навыки', callback_data='skills'))
@@ -50,6 +50,8 @@ def text_handler(message):
 
     elif (message.text == TEMPLATE_TEXT['admin_button']) and (message.chat.id in config.MY_ID):
         num_users = manage_db.count_data()
+        bot.send_message(message.chat.id, TEMPLATE_TEXT['statistic'].format(num_users),
+        				 reply_markup=getReplyKeyboard(TEMPLATE_TEXT['admin_button'], resize_keyboard=True))
 
 
 def main_loop():
